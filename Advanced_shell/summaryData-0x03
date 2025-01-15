@@ -1,0 +1,34 @@
+#!/bin/bash
+
+
+INPUT_DIR="pokemon_data_parallel"
+OUTPUT_CSV="pokemon_summary.csv"
+TEMP_FILE="temp_data.txt"
+
+
+> "$OUTPUT_CSV"
+> "$TEMP_FILE"
+
+
+echo "Name,Height (m),Weight (kg)" > "$OUTPUT_CSV"
+
+
+for json_file in "$INPUT_DIR"/*.json; do
+
+  name=$(jq -r '.name' "$json_file" | awk '{print toupper(substr($0,1,1))tolower(substr($0,2))}')
+  height=$(jq -r '.height / 10' "$json_file") 
+  weight=$(jq -r '.weight / 10' "$json_file") 
+  echo "$name,$height,$weight" >> "$OUTPUT_CSV"
+  echo "$height $weight" >> "$TEMP_FILE"
+done
+
+average_height=$(awk '{sum_height += $1; count++} END {if (count > 0) printf "%.2f", sum_height / count}' "$TEMP_FILE")
+average_weight=$(awk '{sum_weight += $2; count++} END {if (count > 0) printf "%.2f", sum_weight / count}' "$TEMP_FILE")
+
+
+rm -f "$TEMP_FILE"
+
+echo "" >> "$OUTPUT_CSV"
+echo "Average Height (m),$average_height" >> "$OUTPUT_CSV"
+echo "Average Weight (kg),$average_weight" >> "$OUTPUT_CSV"
+echo "Summary report generated: $OUTPUT_CSV"
